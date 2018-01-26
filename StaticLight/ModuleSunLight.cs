@@ -9,9 +9,9 @@ namespace StaticLight
 	public class ModuleSunLight : StaticModule
 	{
 		public string animationName;
+		public bool reverseAnimation = false;
 
 		private Animation animationComponent;
-		private bool playAnimForward = false;
 		private bool animIsPlaying = false;
 		private float animLength;
 		private float animationSpeed;
@@ -29,20 +29,32 @@ namespace StaticLight
 
 		void DoStart ()
 		{
-			
+			Debug.Log ("[StaticLight]");
 			Debug.Log ("[StaticLight] on Start ()");
-			animationName = "emisTest6"/*moduleFields ["animationName"]*/;
+			Debug.Log ("[StaticLight]");
+
+			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+			foreach (var field in myFields) {
+				Debug.Log ("[StaticLight] field : " + field.Name);
+				if (field.Name == "animationName") {
+					animationName = (string)field.GetValue (this);
+				}
+				if (field.Name == "reverseAnimation") {
+					reverseAnimation = (bool)field.GetValue (this);
+				}
+			}
 			Debug.Log ("[StaticLight] animationName : " + animationName);
+			Debug.Log ("[StaticLight] reverseAnimaion : " + reverseAnimation);
+
 
 			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
 				Debug.Log ("[StaticLight] gameObject animation in children, name : " + anim.name);
 				//if (anim.name == animationName) {
 					animationComponent = anim;
-				animationName = anim.name;
+//				animationName = anim.name;
 				//}
 			}
 
-			animationName = "emisTest6";
 			animLength = animationComponent [animationName].length * animationComponent [animationName].normalizedSpeed;
 			animationSpeed = animationComponent [animationName].speed;
 
@@ -51,6 +63,13 @@ namespace StaticLight
 			StartCoroutine ("LightsOff");
 
 //			hasStarted = true; 
+		}
+
+		void OnDestroy ()
+		{
+			Debug.Log ("[StaticLight]");
+			Debug.Log ("[StaticLight] on OnDestroy ()");
+			Debug.Log ("[StaticLight]");
 		}
 
 		public override void StaticObjectUpdate ()
