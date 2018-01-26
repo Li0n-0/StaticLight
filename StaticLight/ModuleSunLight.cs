@@ -134,24 +134,24 @@ namespace StaticLight
 			
 
 			if (animIsPlaying) {
-				Debug.Log ("[StaticLight] CheckSunPos : Anim already playing");
+//				Debug.Log ("[StaticLight] CheckSunPos : Anim already playing");
 				return;
 			}
 
 			inSunLight = IsUnderTheSun ();
-			Debug.Log ("[StaticLight] CheckSunPos is : " + inSunLight);
+//			Debug.Log ("[StaticLight] CheckSunPos is : " + inSunLight);
 
 			if (inSunLight && lightIsOn) {
-				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
+//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
 				StartCoroutine ("LightsOff");
 				return;
 			}
 			if (!inSunLight && !lightIsOn) {
-				Debug.Log ("[StaticLight] CheckSunPos : should turn lights on");
+//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights on");
 				StartCoroutine ("LightsOn");
 				return;
 			}
-			Debug.Log ("[StaticLight] CheckSunPos : nothing wrong with the light, they are : " + lightIsOn);
+//			Debug.Log ("[StaticLight] CheckSunPos : nothing wrong with the light, they are : " + lightIsOn);
 		}
 
 		void Update ()
@@ -192,8 +192,8 @@ namespace StaticLight
 //			Debug.Log ("[StaticLight] RAYCAST !");
 			RaycastHit hit;
 
-			if (Physics.Raycast (transform.position, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15/*  | 1 << 28*/))) {
-				Debug.Log ("[StaticLight] hit is named : " + hit.transform.name);
+			if (Physics.Raycast (transform.position, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15  | 1 << 28))) {
+//				Debug.Log ("[StaticLight] hit is named : " + hit.transform.name);
 				if (hit.transform.name == sun.bodyName) {
 					
 					return true;
