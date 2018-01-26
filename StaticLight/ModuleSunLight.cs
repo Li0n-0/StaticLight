@@ -60,6 +60,7 @@ namespace StaticLight
 
 			sun = Planetarium.fetch.Sun;
 
+
 			StartCoroutine ("LightsOff");
 
 //			hasStarted = true; 
@@ -124,7 +125,7 @@ namespace StaticLight
 			RaycastHit hit;
 
 			if (Physics.Raycast (transform.position, sun.position, out hit, Mathf.Infinity, (1 << 10/* | 1 << 15*/))) {
-				if (hit.transform.name == "Sun") {
+				if (hit.transform.name == sun.bodyName) {
 //					Debug.Log ("[StaticLight] found the sun");
 					return true;
 				}
