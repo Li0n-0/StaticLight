@@ -136,8 +136,14 @@ namespace StaticLight
 		{
 			Debug.Log ("[StaticLight] turning lights on");
 			animIsPlaying = true;
-			animationComponent [animationName].speed = animationSpeed;
-			animationComponent [animationName].time = 0;
+			if (reverseAnimation) {
+				animationComponent [animationName].speed = -animationSpeed;
+				animationComponent [animationName].normalizedTime = 1f;
+			} else {
+				animationComponent [animationName].speed = animationSpeed;
+				animationComponent [animationName].time = 0;
+			}
+
 			animationComponent.Play (animationName);
 			lightIsOn = true;
 			yield return new WaitForSeconds (animLength);
@@ -149,8 +155,14 @@ namespace StaticLight
 		{
 			Debug.Log ("[StaticLight] turning lights off");
 			animIsPlaying = true;
-			animationComponent [animationName].speed = -animationSpeed;
-			animationComponent [animationName].normalizedTime = 1f;
+			if (reverseAnimation) {
+				animationComponent [animationName].speed = animationSpeed;
+				animationComponent [animationName].time = 0;
+			} else {
+				animationComponent [animationName].speed = -animationSpeed;
+				animationComponent [animationName].normalizedTime = 1f;
+			}
+
 			animationComponent.Play (animationName);
 			lightIsOn = false;
 			yield return new WaitForSeconds (animLength);
