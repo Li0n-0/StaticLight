@@ -30,11 +30,6 @@ namespace StaticLight
 
 		void Start ()
 		{
-			DoStart ();
-		}
-
-		void DoStart ()
-		{
 			Debug.Log ("[StaticLight]");
 			Debug.Log ("[StaticLight] on Start ()");
 			Debug.Log ("[StaticLight]");
@@ -43,7 +38,7 @@ namespace StaticLight
 			foreach (var field in myFields) {
 				Debug.Log ("[StaticLight] field : " + field.Name);
 				if (field.Name == "animationName") {
-					animationName = (string)field.GetValue (this);
+					animationName = /*(string)field.GetValue (this)*/"xxx";
 				}
 				if (field.Name == "reverseAnimation") {
 					reverseAnimation = (bool)field.GetValue (this);
@@ -69,9 +64,15 @@ namespace StaticLight
 			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
 				Debug.Log ("[StaticLight] gameObject animation in children, name : " + anim.name);
 				//if (anim.name == animationName) {
-					animationComponent = anim;
-//				animationName = anim.name;
+
+				//				animationName = anim.name;
 				//}
+				if (anim [animationName] != null) {
+					animationComponent = anim;
+					Debug.Log ("[StaticLight] find the right anim : " + anim.name);
+				} else {
+					Debug.Log ("[StaticLight] the anim is not in : " + anim.name);
+				}
 			}
 
 			animLength = animationComponent [animationName].length * animationComponent [animationName].normalizedSpeed;
@@ -82,7 +83,12 @@ namespace StaticLight
 
 			StartCoroutine ("LightsOff");
 
-//			hasStarted = true; 
+			//			hasStarted = true; 
+		}
+
+		private void ReStart ()
+		{
+			
 		}
 
 		void OnDestroy ()
@@ -100,16 +106,16 @@ namespace StaticLight
 //			}
 			mainCoroutineHasStarted = false;
 			animIsPlaying = false;
-			if (this.isActiveAndEnabled && hasStarted) {
-				StopAllCoroutines ();
-
-				animationComponent.Stop (animationName);
-				animationComponent [animationName].time = 0;
-				animationComponent [animationName].speed = animationSpeed;
-				lightIsOn = false;
-				animIsPlaying = false;
-				StartCoroutine ("SearchTheSun");
-			}
+//			if (this.isActiveAndEnabled && hasStarted) {
+////				StopAllCoroutines ();
+////
+////				animationComponent.Stop (animationName);
+////				animationComponent [animationName].time = 0;
+////				animationComponent [animationName].speed = animationSpeed;
+////				lightIsOn = false;
+////				animIsPlaying = false;
+////				StartCoroutine ("SearchTheSun");
+//			}
 
 
 		}
