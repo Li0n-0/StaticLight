@@ -8,37 +8,34 @@ namespace StaticLight
 {
 	public class ModuleSunLight : StaticModule
 	{
+		// Public .cfg fields
 		public string animationName;
 		public bool reverseAnimation = false;
 		public float delayLowTimeWrap = 2f;
 		public float delayHighTimeWrap = .1f;
 
-		private Animation animationComponent;
+		private bool hasStarted = false;
+
+		private bool mainCoroutineHasStarted = false;
 		private bool animIsPlaying = false;
+		private bool inSunLight = false;
+		private bool lightIsOn = false;
+		private Animation animationComponent;
 		private float animLength;
 		private float animationSpeed;
 
 		private CelestialBody sun;
-		private bool inSunLight = false;
-		private bool lightIsOn = false;
-
-		private bool hasStarted = false;
 
 		private List<WaitForSeconds> timeWrapDelays;
 
-		private bool mainCoroutineHasStarted = false;
-
 		void Start ()
 		{
-			Debug.Log ("[StaticLight]");
-			Debug.Log ("[StaticLight] on Start ()");
-			Debug.Log ("[StaticLight]");
-
+			// Fetch parameter from cfg, using Kerbal Konstructs way
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 			foreach (var field in myFields) {
-				Debug.Log ("[StaticLight] field : " + field.Name);
+				
 				if (field.Name == "animationName") {
-					animationName = /*(string)field.GetValue (this)*/"xxx";
+					animationName = (string)field.GetValue (this);
 				}
 				if (field.Name == "reverseAnimation") {
 					reverseAnimation = (bool)field.GetValue (this);
@@ -50,8 +47,23 @@ namespace StaticLight
 					delayHighTimeWrap = (float)field.GetValue (this);
 				}
 			}
-			Debug.Log ("[StaticLight] animationName : " + animationName);
-			Debug.Log ("[StaticLight] reverseAnimaion : " + reverseAnimation);
+
+			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
+				if (anim [animationName] != null) {
+					animationComponent = anim;
+					break;
+				}
+			}
+
+			if (animationComponent == null) {
+				Debug.Log ("[StaticLight] no anim found, destroying now");
+				Destroy (this);
+			}
+
+			animLength = animationComponent [animationName].length * animationComponent [animationName].normalizedSpeed;
+			animationSpeed = animationComponent [animationName].speed;
+
+			sun = Planetarium.fetch.Sun;
 
 			timeWrapDelays = new List<WaitForSeconds> ();
 			timeWrapDelays.Add (new WaitForSeconds (delayHighTimeWrap));
@@ -60,69 +72,19 @@ namespace StaticLight
 			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 3f));
 			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 4f));
 
-
-			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
-				Debug.Log ("[StaticLight] gameObject animation in children, name : " + anim.name);
-				//if (anim.name == animationName) {
-
-				//				animationName = anim.name;
-				//}
-				if (anim [animationName] != null) {
-					animationComponent = anim;
-					Debug.Log ("[StaticLight] find the right anim : " + anim.name);
-				} else {
-					Debug.Log ("[StaticLight] the anim is not in : " + anim.name);
-				}
-			}
-
-			animLength = animationComponent [animationName].length * animationComponent [animationName].normalizedSpeed;
-			animationSpeed = animationComponent [animationName].speed;
-
-			sun = Planetarium.fetch.Sun;
-
-
 			StartCoroutine ("LightsOff");
-
-			//			hasStarted = true; 
-		}
-
-		private void ReStart ()
-		{
-			
-		}
-
-		void OnDestroy ()
-		{
-			Debug.Log ("[StaticLight]");
-			Debug.Log ("[StaticLight] on OnDestroy ()");
-			Debug.Log ("[StaticLight]");
 		}
 
 		public override void StaticObjectUpdate ()
 		{
 			Debug.Log ("[StaticLight] on StaticObjectUpdate ()");
-//			if (!hasStarted) {
-//				DoStart ();
-//			}
 			mainCoroutineHasStarted = false;
 			animIsPlaying = false;
-//			if (this.isActiveAndEnabled && hasStarted) {
-////				StopAllCoroutines ();
-////
-////				animationComponent.Stop (animationName);
-////				animationComponent [animationName].time = 0;
-////				animationComponent [animationName].speed = animationSpeed;
-////				lightIsOn = false;
-////				animIsPlaying = false;
-////				StartCoroutine ("SearchTheSun");
-//			}
-
-
 		}
 
 		private IEnumerator SearchTheSun ()
 		{
-			Debug.Log ("[StaticLight] SearchTheSun started");
+			Debug.Log ("[StaticLight] Main coroutine started");
 			mainCoroutineHasStarted = true;
 			while (true) {
 				
@@ -145,7 +107,7 @@ namespace StaticLight
 			}
 
 			inSunLight = IsUnderTheSun ();
-//			Debug.Log ("[StaticLight] CheckSunPos is : " + inSunLight);
+//			Debug.Log ("[StaticLight] inSunLight is : " + inSunLight);
 
 			if (inSunLight && lightIsOn) {
 //				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
@@ -162,7 +124,6 @@ namespace StaticLight
 
 		void Update ()
 		{
-//			Debug.Log ("[StaticLight] in Update ()");
 			if (!hasStarted) {
 				return;
 			}
@@ -170,32 +131,10 @@ namespace StaticLight
 			if (hasStarted && !mainCoroutineHasStarted) {
 				StartCoroutine ("SearchTheSun");
 			}
-
-			if (!animIsPlaying) {
-//				if (IsUnderTheSun () && lightIsOn) {
-//					StartCoroutine ("LightsOff");
-//					return;
-//				} else if (!IsUnderTheSun () && !lightIsOn) {
-//					StartCoroutine ("LightsOn");
-//					return;
-//				}
-				if (Input.GetKeyDown (KeyCode.X)) {
-					Debug.Log ("[StaticLight] click lightsOn");
-					StartCoroutine ("LightsOn");
-					return;
-				}
-				if (Input.GetKeyDown (KeyCode.Y)) {
-					Debug.Log ("[StaticLight] click lightsOff");
-					StartCoroutine ("LightsOff");
-					return;
-				}
-			}
-
 		}
 
 		private bool IsUnderTheSun ()
 		{
-//			Debug.Log ("[StaticLight] RAYCAST !");
 			RaycastHit hit;
 
 			if (Physics.Raycast (transform.position, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15  | 1 << 28))) {
@@ -210,7 +149,7 @@ namespace StaticLight
 
 		private IEnumerator LightsOn ()
 		{
-			Debug.Log ("[StaticLight] turning lights on");
+//			Debug.Log ("[StaticLight] turning lights on");
 			animIsPlaying = true;
 			if (reverseAnimation) {
 				animationComponent [animationName].speed = -animationSpeed;
@@ -229,7 +168,7 @@ namespace StaticLight
 
 		private IEnumerator LightsOff ()
 		{
-			Debug.Log ("[StaticLight] turning lights off");
+//			Debug.Log ("[StaticLight] turning lights off");
 			animIsPlaying = true;
 			if (reverseAnimation) {
 				animationComponent [animationName].speed = animationSpeed;
