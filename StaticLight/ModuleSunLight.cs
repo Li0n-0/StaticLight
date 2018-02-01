@@ -28,9 +28,39 @@ namespace StaticLight
 
 		private List<WaitForSeconds> timeWrapDelays;
 
+//		private KerbalKonstructs.UI.WindowManager kkWindowManager;
+
+//		private GameObject debugStatic, debugRay;
+
+		private Vector3 rayPos;
+
 		void Start ()
 		{
+			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on Start ()");
 			// Fetch parameter from cfg, using Kerbal Konstructs way
+
+
+//			debugStatic = GameObject.CreatePrimitive (PrimitiveType.Sphere);
+//			Destroy (debugStatic.GetComponent<SphereCollider> ());
+//			debugStatic.GetComponent<MeshRenderer> ().material = new Material (Shader.Find ("Transparent/Diffuse"));
+//			debugStatic.GetComponent<MeshRenderer> ().material.color = Color.red;
+//			debugStatic.transform.position = transform.position;
+//			debugStatic.layer = 17;
+//			debugStatic.transform.SetParent (transform);
+//			debugStatic.SetActive (true);
+//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") make static sphere");
+//
+//			debugRay = GameObject.CreatePrimitive (PrimitiveType.Sphere);
+//			Destroy (debugRay.GetComponent<SphereCollider> ());
+//			debugRay.GetComponent<MeshRenderer> ().material = new Material (Shader.Find ("Transparent/Diffuse"));
+//			debugRay.GetComponent<MeshRenderer> ().material.color = Color.blue;
+//			debugRay.transform.position = rayPos;
+////			debugRay.transform.position = mesh.bounds.max;
+//			debugRay.layer = 17;
+//			debugRay.transform.SetParent (transform);
+//			debugRay.SetActive (true);
+//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") make ray sphere");
+
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 			foreach (var field in myFields) {
 				
@@ -72,14 +102,55 @@ namespace StaticLight
 			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 3f));
 			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 4f));
 
+			SetRayPos ();
+
 			StartCoroutine ("LightsOff");
+
+
+//			kkWindowManager = MonoBehaviour.FindObjectOfType<KerbalKonstructs.UI.WindowManager> ();
+//			if (kkWindowManager == null) {
+//				Debug.Log ("[StaticLight] instance of KK not found");
+//			} else {
+//				Debug.Log ("[StaticLight] found the instance of KK !");
+//			}
+
+
+		}
+
+		void OnDestroy ()
+		{
+			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on OnDestroy ()");
 		}
 
 		public override void StaticObjectUpdate ()
 		{
-			Debug.Log ("[StaticLight] on StaticObjectUpdate ()");
+//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectUpdate ()");
+			StopAllCoroutines ();
 			mainCoroutineHasStarted = false;
 			animIsPlaying = false;
+
+		}
+
+		private void SetRayPos ()
+		{
+			float size;
+			float meshSize = gameObject.GetComponentInChildren<MeshFilter> ().mesh.bounds.size.y;
+			float colliderSize = 0;
+			if (gameObject.GetComponentInChildren<Collider> () != null) {
+				colliderSize = gameObject.GetComponentInChildren<Collider> ().bounds.size.y;
+			}
+			if (meshSize > colliderSize) {
+				size = meshSize;
+			} else {
+				size = colliderSize;
+			}
+//			Debug.Log ("[StaticLight]  meshSize : " + meshSize);
+//			Debug.Log ("[StaticLight]  colliderSize : " + colliderSize);
+
+			Vector3 upAxis = FlightGlobals.getUpAxis (FlightGlobals.currentMainBody, transform.position);
+
+			upAxis *= size + 1f;
+			rayPos = transform.position + upAxis;
 		}
 
 		private IEnumerator SearchTheSun ()
@@ -124,12 +195,25 @@ namespace StaticLight
 
 		void Update ()
 		{
+//			if (KerbalKonstructs.UI.WindowManager.IsOpen ()
 			if (!hasStarted) {
 				return;
 			}
 
 			if (hasStarted && !mainCoroutineHasStarted) {
+				SetRayPos ();
+//				debugRay.transform.position = rayPos;
 				StartCoroutine ("SearchTheSun");
+			}
+
+			if (!animIsPlaying) {
+				if (Input.GetKeyDown (KeyCode.X)) {
+					StartCoroutine ("LightsOn");
+					return;
+				}
+				if (Input.GetKeyDown (KeyCode.Y)) {
+					StartCoroutine ("LightsOff");
+				}
 			}
 		}
 
@@ -137,8 +221,8 @@ namespace StaticLight
 		{
 			RaycastHit hit;
 
-			if (Physics.Raycast (transform.position, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15  | 1 << 28))) {
-//				Debug.Log ("[StaticLight] hit is named : " + hit.transform.name);
+			if (Physics.Raycast (/*transform.position*/rayPos, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15  | 1 << 28))) {
+				Debug.Log ("[StaticLight] (for : " + gameObject.name + ") hit is named : " + hit.transform.name);
 				if (hit.transform.name == sun.bodyName) {
 					
 					return true;
@@ -161,8 +245,9 @@ namespace StaticLight
 
 			animationComponent.Play (animationName);
 			lightIsOn = true;
-			yield return new WaitForSeconds (animLength);
 			hasStarted = true;
+			yield return new WaitForSeconds (animLength);
+//			hasStarted = true;
 			animIsPlaying = false;
 		}
 
@@ -180,8 +265,9 @@ namespace StaticLight
 
 			animationComponent.Play (animationName);
 			lightIsOn = false;
-			yield return new WaitForSeconds (animLength);
 			hasStarted = true;
+			yield return new WaitForSeconds (animLength);
+
 			animIsPlaying = false;
 		}
 	}

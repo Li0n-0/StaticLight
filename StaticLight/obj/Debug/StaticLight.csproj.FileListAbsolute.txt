@@ -1,4 +1,3 @@
-D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.csprojResolveAssemblyReference.cache
 D:\GitHub\StaticLight\StaticLight\bin\Debug\StaticLight.dll
 D:\GitHub\StaticLight\StaticLight\bin\Debug\StaticLight.pdb
 D:\GitHub\StaticLight\StaticLight\bin\Debug\Assembly-CSharp.dll
@@ -13,7 +12,8 @@ D:\GitHub\StaticLight\StaticLight\bin\Debug\TDx.TDxInput.dll
 D:\GitHub\StaticLight\StaticLight\bin\Debug\Mono.Security.dll
 D:\GitHub\StaticLight\StaticLight\bin\Debug\UnityEngine.xml
 D:\GitHub\StaticLight\StaticLight\bin\Debug\KerbalKonstructs.pdb
-D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.dll
-D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.pdb
 D:\GitHub\StaticLight\GameData\StaticLight\StaticLight.dll
 D:\GitHub\StaticLight\GameData\StaticLight\StaticLight.pdb
+D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.csprojResolveAssemblyReference.cache
+D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.dll
+D:\GitHub\StaticLight\StaticLight\obj\Debug\StaticLight.pdb
