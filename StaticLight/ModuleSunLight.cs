@@ -11,56 +11,56 @@ namespace StaticLight
 		// Public .cfg fields
 		public string animationName;
 		public bool reverseAnimation = false;
-		public float delayLowTimeWrap = 2f;
-		public float delayHighTimeWrap = .1f;
+		public bool timeWarpAnim = false;
+		public float delayLowTimeWarp = 2f;
+		public float delayHighTimeWarp = .1f;
+		public bool preciseMethod = false;
+		public float horizonOffset = 0;
 
 		private bool hasStarted = false;
 
-		private bool mainCoroutineHasStarted = false;
-		private bool animIsPlaying = false;
-		private bool inSunLight = false;
-		private bool lightIsOn = false;
+		private StaticInstance staticInstance;
+		private CelestialBody sun;
+
+		private List<WaitForSeconds> timeWarpDelays;
+
+		internal bool isMaster = false;
+		private ModuleSunLight master;
+		private List<ModuleSunLight> slaveList;
+
+
 		private Animation animationComponent;
 		private float animLength;
 		private float animationSpeed;
 
-		private CelestialBody sun;
+		private bool inSunLight = false;
+		private bool animIsOn = false;
 
-		private List<WaitForSeconds> timeWrapDelays;
+		private bool mainCoroutineHasStarted = false;
+		private bool animIsPlaying = false;
+		private bool guiIsUp = false;
 
-//		private KerbalKonstructs.UI.WindowManager kkWindowManager;
+		private Vector3 boundsCenter;
+		private Vector3 centerToStatic;
+		private float horizonAngle;
 
-//		private GameObject debugStatic, debugRay;
 
-		private Vector3 rayPos;
 
 		void Start ()
 		{
 			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on Start ()");
+
+
+			sun = Planetarium.fetch.Sun;
+
+			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
+				if (sInstance.gameObject == gameObject) {
+					staticInstance = sInstance;
+					break;
+				}
+			}
+
 			// Fetch parameter from cfg, using Kerbal Konstructs way
-
-
-//			debugStatic = GameObject.CreatePrimitive (PrimitiveType.Sphere);
-//			Destroy (debugStatic.GetComponent<SphereCollider> ());
-//			debugStatic.GetComponent<MeshRenderer> ().material = new Material (Shader.Find ("Transparent/Diffuse"));
-//			debugStatic.GetComponent<MeshRenderer> ().material.color = Color.red;
-//			debugStatic.transform.position = transform.position;
-//			debugStatic.layer = 17;
-//			debugStatic.transform.SetParent (transform);
-//			debugStatic.SetActive (true);
-//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") make static sphere");
-//
-//			debugRay = GameObject.CreatePrimitive (PrimitiveType.Sphere);
-//			Destroy (debugRay.GetComponent<SphereCollider> ());
-//			debugRay.GetComponent<MeshRenderer> ().material = new Material (Shader.Find ("Transparent/Diffuse"));
-//			debugRay.GetComponent<MeshRenderer> ().material.color = Color.blue;
-//			debugRay.transform.position = rayPos;
-////			debugRay.transform.position = mesh.bounds.max;
-//			debugRay.layer = 17;
-//			debugRay.transform.SetParent (transform);
-//			debugRay.SetActive (true);
-//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") make ray sphere");
-
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 			foreach (var field in myFields) {
 				
@@ -70,11 +70,20 @@ namespace StaticLight
 				if (field.Name == "reverseAnimation") {
 					reverseAnimation = (bool)field.GetValue (this);
 				}
-				if (field.Name == "delayLowTimeWrap") {
-					delayLowTimeWrap = (float)field.GetValue (this);
+				if (field.Name == "timeWrapAnimation") {
+					timeWarpAnim = (bool)field.GetValue (this);
 				}
-				if (field.Name == "delayHighTimeWrap") {
-					delayHighTimeWrap = (float)field.GetValue (this);
+				if (field.Name == "delayLowTimeWarp") {
+					delayLowTimeWarp = (float)field.GetValue (this);
+				}
+				if (field.Name == "delayHighTimeWarp") {
+					delayHighTimeWarp = (float)field.GetValue (this);
+				}
+				if (field.Name == "mathHorizonAngle") {
+					preciseMethod = (bool)field.GetValue (this);
+				}
+				if (field.Name == "horizonAngleOffset") {
+					horizonOffset = (float)field.GetValue (this);
 				}
 			}
 
@@ -93,64 +102,246 @@ namespace StaticLight
 			animLength = animationComponent [animationName].length * animationComponent [animationName].normalizedSpeed;
 			animationSpeed = animationComponent [animationName].speed;
 
-			sun = Planetarium.fetch.Sun;
+			// Make sure the light is off
+			AnimOff ();
 
-			timeWrapDelays = new List<WaitForSeconds> ();
-			timeWrapDelays.Add (new WaitForSeconds (delayHighTimeWrap));
-			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap));
-			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 2f));
-			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 3f));
-			timeWrapDelays.Add (new WaitForSeconds (delayLowTimeWrap / 4f));
+			SetUp ();
 
-			SetRayPos ();
+			timeWarpDelays = new List<WaitForSeconds> ();
+			timeWarpDelays.Add (new WaitForSeconds (delayHighTimeWarp));
+			timeWarpDelays.Add (new WaitForSeconds (delayLowTimeWarp));
+			timeWarpDelays.Add (new WaitForSeconds (delayLowTimeWarp / 2f));
+			timeWarpDelays.Add (new WaitForSeconds (delayLowTimeWarp / 3f));
+			timeWarpDelays.Add (new WaitForSeconds (delayLowTimeWarp / 4f));
 
-			StartCoroutine ("LightsOff");
+			hasStarted = true;
+		}
 
+		internal void SetUp ()
+		{
+			// run after the editor has closed
 
-//			kkWindowManager = MonoBehaviour.FindObjectOfType<KerbalKonstructs.UI.WindowManager> ();
-//			if (kkWindowManager == null) {
-//				Debug.Log ("[StaticLight] instance of KK not found");
-//			} else {
-//				Debug.Log ("[StaticLight] found the instance of KK !");
-//			}
+			SetGroup ();
 
+			if (isMaster) {
+				boundsCenter = GetBoundsCenter ();
+				horizonAngle = GetHorizonAngle ();
+				centerToStatic = FlightGlobals.getUpAxis (FlightGlobals.currentMainBody, boundsCenter);
+			}
+		}
 
+		internal void StopObject ()
+		{
+			StopAllCoroutines ();
+			mainCoroutineHasStarted = false;
+			AnimOff ();
+		}
+
+		private void AnimOff ()
+		{
+			animIsPlaying = false;
+			animIsOn = false;
+
+			if (reverseAnimation) {
+				animationComponent [animationName].normalizedTime = 1f;
+			} else {
+				animationComponent [animationName].time = 0;
+			}
 		}
 
 		void OnDestroy ()
 		{
 			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on OnDestroy ()");
+
+			if (isMaster) {
+				if (slaveList.Count > 0) {
+//					slaveList [0].isMaster = true;
+					slaveList [0].SetUp ();
+				}
+			} else {
+				master.SetUp ();
+			}
 		}
 
 		public override void StaticObjectUpdate ()
 		{
-//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectUpdate ()");
-			StopAllCoroutines ();
-			mainCoroutineHasStarted = false;
-			animIsPlaying = false;
+			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectUpdate ()");
 
+			if (hasStarted) {
+				StopObject ();
+			}
 		}
 
-		private void SetRayPos ()
+		private void StaticObjectEditorOpen ()
 		{
-			float size;
-			float meshSize = gameObject.GetComponentInChildren<MeshFilter> ().mesh.bounds.size.y;
-			float colliderSize = 0;
-			if (gameObject.GetComponentInChildren<Collider> () != null) {
-				colliderSize = gameObject.GetComponentInChildren<Collider> ().bounds.size.y;
+			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectEditorOpen ()");
+			StopObject ();
+			foreach (ModuleSunLight module in slaveList) {
+				module.StopObject ();
 			}
-			if (meshSize > colliderSize) {
-				size = meshSize;
+			guiIsUp = true;
+		}
+
+		private void StaticObjectEditorClose ()
+		{
+			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectEditorClose ()");
+			SetUp ();
+			StartCoroutine ("SearchTheSun");
+			guiIsUp = false;
+		}
+
+		private void SetGroup ()
+		{
+			Debug.Log ("[SL] Set group for : " + gameObject.name + ", group : " + staticInstance.Group);
+			slaveList = new List<ModuleSunLight> ();
+
+			if (staticInstance.Group == "Ungrouped") {
+				master = this;
+				isMaster = true;
+				return;
+			}
+
+			bool findMaster = false;
+
+			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
+				if (sInstance != staticInstance) {
+					if (sInstance.Group == staticInstance.Group) {
+						ModuleSunLight module = sInstance.gameObject.GetComponentInChildren<ModuleSunLight> ();
+						if (module != null) {
+							if (module.isMaster) {
+								master = module;
+								findMaster = true;
+								isMaster = false;
+								break;
+							} else {
+								slaveList.Add (module);
+							}
+						}
+					}
+				}
+			}
+
+			if (!findMaster) {
+				master = this;
+				isMaster = true;
+			}
+		}
+
+		private Vector3 GetBoundsCenter ()
+		{
+			Bounds groupBounds = new Bounds ();
+			foreach (ModuleSunLight module in slaveList) {
+				
+				groupBounds.Encapsulate (GetBounds (module.gameObject));
+			}
+			groupBounds.Encapsulate (GetBounds (gameObject));
+			groupBounds.Expand (1f);
+
+			return (groupBounds.center + (FlightGlobals.getUpAxis (FlightGlobals.currentMainBody, groupBounds.center) * (groupBounds.size.y / 2f)));
+		}
+
+		private Bounds GetBounds (GameObject staticObject)
+		{
+			Bounds meshBounds = staticObject.GetComponentInChildren<MeshFilter> ().mesh.bounds;
+			Bounds colliderBounds = new Bounds ();
+
+			if (staticObject.GetComponentInChildren<Collider> () != null) {
+				colliderBounds = staticObject.GetComponentInChildren<Collider> ().bounds;
+			}
+
+			if (meshBounds.size.y > colliderBounds.size.y) {
+				return meshBounds;
 			} else {
-				size = colliderSize;
+				return colliderBounds;
 			}
-//			Debug.Log ("[StaticLight]  meshSize : " + meshSize);
-//			Debug.Log ("[StaticLight]  colliderSize : " + colliderSize);
+		}
 
-			Vector3 upAxis = FlightGlobals.getUpAxis (FlightGlobals.currentMainBody, transform.position);
+		private float GetHorizonAngle ()
+		{
+			float angleHor;
 
-			upAxis *= size + 1f;
-			rayPos = transform.position + upAxis;
+			if (preciseMethod) {
+				float height = Vector3.Distance (boundsCenter, FlightGlobals.currentMainBody.position);
+				float sinus = (float)FlightGlobals.currentMainBody.Radius / height;
+				float angle = Mathf.Asin (sinus) * Mathf.Rad2Deg;
+				angleHor = 180f - angle;
+			} else {
+				angleHor = 90f;
+			}
+
+			return (angleHor + horizonOffset);
+		}
+
+		void Update ()
+		{
+			if (isMaster && hasStarted) {
+				if (KerbalKonstructs.UI.StaticsEditorGUI.instance.IsOpen () && !guiIsUp) {
+					StaticObjectEditorOpen ();
+					return;
+				}
+				if (guiIsUp && !KerbalKonstructs.UI.StaticsEditorGUI.instance.IsOpen ()) {
+					StaticObjectEditorClose ();
+					return;
+				}
+
+				if (!guiIsUp && !mainCoroutineHasStarted) {
+					if (this.isActiveAndEnabled) {
+						SetUp ();
+						StartCoroutine ("SearchTheSun");
+					}
+				}
+			}
+		}
+
+		private void CheckSunPos ()
+		{
+			inSunLight = IsUnderTheSun ();
+			//			Debug.Log ("[StaticLight] inSunLight is : " + inSunLight);
+
+			if (inSunLight && animIsOn) {
+				//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
+
+				StartCoroutine ("StartAnim", false);
+
+				foreach (ModuleSunLight module in slaveList) {
+					module.StartCoroutine ("StartAnim", false);
+				}
+
+				return;
+			}
+			if (!inSunLight && !animIsOn) {
+				//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights on");
+				StartCoroutine ("StartAnim", true);
+
+				foreach (ModuleSunLight module in slaveList) {
+					module.StartCoroutine ("StartAnim", true);
+				}
+
+			}
+			//			Debug.Log ("[StaticLight] CheckSunPos : nothing wrong with the light, they are : " + lightIsOn);
+		}
+
+		private bool IsUnderTheSun ()
+		{
+			Vector3 staticToSun = sun.position - boundsCenter;
+			float sunAngle = Vector3.Angle (centerToStatic, staticToSun);
+
+			if (sunAngle < horizonAngle) {
+				return true;
+			} else {
+				return false;
+			}
+			// Raycast method :
+			//			RaycastHit hit;
+			//
+			//			if (Physics.Raycast (/*transform.position*/rayPos, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15 | 1 << 28))) {
+			////				Debug.Log ("[StaticLight] (for : " + gameObject.name + ") hit is named : " + hit.transform.name + ", on layer : " + hit.transform.gameObject.layer);
+			//				if (hit.transform.name == sun.bodyName) {
+			//					
+			//					return true;
+			//				}
+			//			}
+			//			return false;
 		}
 
 		private IEnumerator SearchTheSun ()
@@ -161,77 +352,27 @@ namespace StaticLight
 				
 				CheckSunPos ();
 				if (TimeWarp.CurrentRate < 5f) {
-					yield return timeWrapDelays [(int)TimeWarp.CurrentRate];
+					yield return timeWarpDelays [(int)TimeWarp.CurrentRate];
 				} else {
-					yield return timeWrapDelays [0];
+					yield return timeWarpDelays [0];
 				}
 			}
 		}
 
-		private void CheckSunPos ()
+		internal IEnumerator StartAnim (bool turnOn)
 		{
-			
-
-			if (animIsPlaying) {
-//				Debug.Log ("[StaticLight] CheckSunPos : Anim already playing");
-				return;
+			while (animIsPlaying) {
+				yield return new WaitForSeconds (.1f);
 			}
 
-			inSunLight = IsUnderTheSun ();
-//			Debug.Log ("[StaticLight] inSunLight is : " + inSunLight);
-
-			if (inSunLight && lightIsOn) {
-//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
-				StartCoroutine ("LightsOff");
-				return;
-			}
-			if (!inSunLight && !lightIsOn) {
-//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights on");
-				StartCoroutine ("LightsOn");
-				return;
-			}
-//			Debug.Log ("[StaticLight] CheckSunPos : nothing wrong with the light, they are : " + lightIsOn);
-		}
-
-		void Update ()
-		{
-//			if (KerbalKonstructs.UI.WindowManager.IsOpen ()
-			if (!hasStarted) {
-				return;
-			}
-
-			if (hasStarted && !mainCoroutineHasStarted) {
-				SetRayPos ();
-//				debugRay.transform.position = rayPos;
-				StartCoroutine ("SearchTheSun");
-			}
-
-			if (!animIsPlaying) {
-				if (Input.GetKeyDown (KeyCode.X)) {
-					StartCoroutine ("LightsOn");
-					return;
-				}
-				if (Input.GetKeyDown (KeyCode.Y)) {
-					StartCoroutine ("LightsOff");
-				}
+			if (turnOn) {
+				StartCoroutine ("SwitchOn");
+			} else {
+				StartCoroutine ("SwitchOff");
 			}
 		}
 
-		private bool IsUnderTheSun ()
-		{
-			RaycastHit hit;
-
-			if (Physics.Raycast (/*transform.position*/rayPos, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15  | 1 << 28))) {
-				Debug.Log ("[StaticLight] (for : " + gameObject.name + ") hit is named : " + hit.transform.name);
-				if (hit.transform.name == sun.bodyName) {
-					
-					return true;
-				}
-			}
-			return false;
-		}
-
-		private IEnumerator LightsOn ()
+		private IEnumerator SwitchOn ()
 		{
 //			Debug.Log ("[StaticLight] turning lights on");
 			animIsPlaying = true;
@@ -243,15 +384,17 @@ namespace StaticLight
 				animationComponent [animationName].time = 0;
 			}
 
+			if (timeWarpAnim) {
+				animationComponent [animationName].speed *= TimeWarp.CurrentRate;
+			}
+
 			animationComponent.Play (animationName);
-			lightIsOn = true;
-			hasStarted = true;
+			animIsOn = true;
 			yield return new WaitForSeconds (animLength);
-//			hasStarted = true;
 			animIsPlaying = false;
 		}
 
-		private IEnumerator LightsOff ()
+		private IEnumerator SwitchOff ()
 		{
 //			Debug.Log ("[StaticLight] turning lights off");
 			animIsPlaying = true;
@@ -263,13 +406,15 @@ namespace StaticLight
 				animationComponent [animationName].normalizedTime = 1f;
 			}
 
+			if (timeWarpAnim) {
+				animationComponent [animationName].speed *= TimeWarp.CurrentRate;
+			}
+
 			animationComponent.Play (animationName);
-			lightIsOn = false;
-			hasStarted = true;
+			animIsOn = false;
 			yield return new WaitForSeconds (animLength);
 
 			animIsPlaying = false;
 		}
 	}
 }
-

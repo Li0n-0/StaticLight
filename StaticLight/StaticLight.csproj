@@ -38,7 +38,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="KerbalKonstructs">
-      <HintPath>..\KSP\GameData\KerbalKonstructs\KerbalKonstructs.dll</HintPath>
+      <HintPath>..\KSP1.3.1\GameData\KerbalKonstructs\KerbalKonstructs.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
