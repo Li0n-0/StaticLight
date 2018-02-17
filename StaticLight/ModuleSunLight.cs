@@ -19,7 +19,7 @@ namespace StaticLight
 
 		private bool hasStarted = false;
 
-		private StaticInstance staticInstance;
+//		private StaticInstance staticInstance;
 		private CelestialBody sun;
 
 		private List<WaitForSeconds> timeWarpDelays;
@@ -50,12 +50,12 @@ namespace StaticLight
 
 			sun = Planetarium.fetch.Sun;
 
-			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
-				if (sInstance.gameObject == gameObject) {
-					staticInstance = sInstance;
-					break;
-				}
-			}
+//			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
+//				if (sInstance.gameObject == gameObject) {
+//					staticInstance = sInstance;
+//					break;
+//				}
+//			}
 
 			// Fetch parameter from cfg, using Kerbal Konstructs way
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
