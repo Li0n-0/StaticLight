@@ -44,12 +44,9 @@ namespace StaticLight
 		private Vector3 centerToStatic;
 		private float horizonAngle;
 
-
-
 		void Start ()
 		{
 			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on Start ()");
-
 
 			sun = Planetarium.fetch.Sun;
 
@@ -93,7 +90,14 @@ namespace StaticLight
 					break;
 				}
 			}
-
+			if (animationComponent == null) {
+				foreach (Animation anim in gameObject.GetComponents<Animation> ()) {
+					if (anim [animationName] != null) {
+						animationComponent = anim;
+						break;
+					}
+				}
+			}
 			if (animationComponent == null) {
 				Debug.Log ("[StaticLight] no anim found, destroying now");
 				Destroy (this);
