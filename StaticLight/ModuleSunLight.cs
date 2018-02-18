@@ -67,7 +67,7 @@ namespace StaticLight
 				if (field.Name == "reverseAnimation") {
 					reverseAnimation = (bool)field.GetValue (this);
 				}
-				if (field.Name == "timeWrapAnimation") {
+				if (field.Name == "timeWarpAnimation") {
 					timeWarpAnim = (bool)field.GetValue (this);
 				}
 				if (field.Name == "delayLowTimeWarp") {
