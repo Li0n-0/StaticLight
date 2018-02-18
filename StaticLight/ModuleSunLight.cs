@@ -11,11 +11,11 @@ namespace StaticLight
 		// Public .cfg fields
 		public string animationName;
 		public bool reverseAnimation = false;
-		public bool timeWarpAnim = false;
+		public bool timeWarpAnimation = false;
 		public float delayLowTimeWarp = 2f;
 		public float delayHighTimeWarp = .1f;
-		public bool preciseMethod = false;
-		public float horizonOffset = 0;
+		public bool mathHorizontalAngle = false;
+		public float horizonAngleOffset = 0;
 
 		private bool hasStarted = false;
 
@@ -60,30 +60,34 @@ namespace StaticLight
 			// Fetch parameter from cfg, using Kerbal Konstructs way
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 			foreach (var field in myFields) {
-				
-				if (field.Name == "animationName") {
+				switch (field.Name) {
+				case "animationName":
 					animationName = (string)field.GetValue (this);
-				}
-				if (field.Name == "reverseAnimation") {
+					break;
+				case "reverseAnimation":
 					reverseAnimation = (bool)field.GetValue (this);
-				}
-				if (field.Name == "timeWarpAnimation") {
-					timeWarpAnim = (bool)field.GetValue (this);
-				}
-				if (field.Name == "delayLowTimeWarp") {
+					break;
+				case "timeWarpAnimation":
+					timeWarpAnimation = (bool)field.GetValue (this);
+					break;
+				case "delayLowTimeWarp":
 					delayLowTimeWarp = (float)field.GetValue (this);
-				}
-				if (field.Name == "delayHighTimeWarp") {
+					break;
+				case "delayHighTimeWarp":
 					delayHighTimeWarp = (float)field.GetValue (this);
-				}
-				if (field.Name == "mathHorizonAngle") {
-					preciseMethod = (bool)field.GetValue (this);
-				}
-				if (field.Name == "horizonAngleOffset") {
-					horizonOffset = (float)field.GetValue (this);
+					break;
+				case "mathHorizontalAngle":
+					mathHorizontalAngle = (bool)field.GetValue (this);
+					break;
+
+				case "horizonAngleOffset":
+					horizonAngleOffset = (float)field.GetValue (this);
+					break;
+				default:
+					break;
 				}
 			}
-
+//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") timeWarpAnimation = " + timeWarpAnimation);
 			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
 				if (anim [animationName] != null) {
 					animationComponent = anim;
@@ -120,6 +124,13 @@ namespace StaticLight
 
 			hasStarted = true;
 		}
+
+//		private bool ParseBool (string str)
+//		{
+//			if (str == "true" || str == "True") {
+//				
+//			}
+//		}
 
 		internal void SetUp ()
 		{
@@ -264,7 +275,7 @@ namespace StaticLight
 		{
 			float angleHor;
 
-			if (preciseMethod) {
+			if (mathHorizontalAngle) {
 				float height = Vector3.Distance (boundsCenter, FlightGlobals.currentMainBody.position);
 				float sinus = (float)FlightGlobals.currentMainBody.Radius / height;
 				float angle = Mathf.Asin (sinus) * Mathf.Rad2Deg;
@@ -273,7 +284,7 @@ namespace StaticLight
 				angleHor = 90f;
 			}
 
-			return (angleHor + horizonOffset);
+			return (angleHor + horizonAngleOffset);
 		}
 
 		void Update ()
@@ -388,7 +399,7 @@ namespace StaticLight
 				animationComponent [animationName].time = 0;
 			}
 
-			if (timeWarpAnim) {
+			if (timeWarpAnimation) {
 				animationComponent [animationName].speed *= TimeWarp.CurrentRate;
 			}
 
@@ -410,7 +421,7 @@ namespace StaticLight
 				animationComponent [animationName].normalizedTime = 1f;
 			}
 
-			if (timeWarpAnim) {
+			if (timeWarpAnimation) {
 				animationComponent [animationName].speed *= TimeWarp.CurrentRate;
 			}
 
