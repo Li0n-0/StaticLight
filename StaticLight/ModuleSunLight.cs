@@ -125,13 +125,6 @@ namespace StaticLight
 			hasStarted = true;
 		}
 
-//		private bool ParseBool (string str)
-//		{
-//			if (str == "true" || str == "True") {
-//				
-//			}
-//		}
-
 		internal void SetUp ()
 		{
 			// run after the editor has closed
@@ -155,12 +148,13 @@ namespace StaticLight
 		private void AnimOff ()
 		{
 			animIsPlaying = false;
-			animIsOn = false;
 
 			if (reverseAnimation) {
 				animationComponent [animationName].normalizedTime = 1f;
+				animIsOn = true;
 			} else {
 				animationComponent [animationName].time = 0;
+				animIsOn = false;
 			}
 		}
 
