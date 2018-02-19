@@ -310,8 +310,14 @@ namespace StaticLight
 
 		private void CheckSunPos ()
 		{
+			if (animIsPlaying || slaveList.Exists (module => (module.animIsPlaying))) {
+				return;
+			}
+
 			inSunLight = IsUnderTheSun ();
 			//			Debug.Log ("[StaticLight] inSunLight is : " + inSunLight);
+
+
 
 			if (inSunLight && animIsOn) {
 				//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
@@ -377,7 +383,7 @@ namespace StaticLight
 		internal IEnumerator StartAnim (bool turnOn)
 		{
 			while (animIsPlaying) {
-				yield return new WaitForSeconds (.1f);
+				yield return timeWarpDelays [0];
 			}
 
 			if (turnOn) {
