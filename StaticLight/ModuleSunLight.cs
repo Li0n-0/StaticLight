@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using KerbalKonstructs.Core;
 
-namespace StaticLight
+namespace KerbalKonstructs
 {
-	public class ModuleSunLight : StaticModule
+	public class AnimateOnSunRise : StaticModule
 	{
 		// Public .cfg fields
 		public string animationName;
@@ -26,8 +26,8 @@ namespace StaticLight
 		private List<WaitForSeconds> timeWarpDelays;
 
 		internal bool isMaster = false;
-		private ModuleSunLight master;
-		private List<ModuleSunLight> slaveList;
+		private AnimateOnSunRise master;
+		private List<AnimateOnSunRise> slaveList;
 
 
 		private Animation animationComponent;
@@ -171,7 +171,7 @@ namespace StaticLight
 		private void StaticObjectEditorOpen ()
 		{
 			StopObject ();
-			foreach (ModuleSunLight module in slaveList) {
+			foreach (AnimateOnSunRise module in slaveList) {
 				module.StopObject ();
 			}
 			guiIsUp = true;
@@ -186,7 +186,7 @@ namespace StaticLight
 
 		private void SetGroup ()
 		{
-			slaveList = new List<ModuleSunLight> ();
+			slaveList = new List<AnimateOnSunRise> ();
 
 			if (staticInstance.Group == "Ungrouped") {
 				master = this;
@@ -199,7 +199,7 @@ namespace StaticLight
 			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
 				if (sInstance != staticInstance) {
 					if (sInstance.Group == staticInstance.Group) {
-						ModuleSunLight module = sInstance.gameObject.GetComponentInChildren<ModuleSunLight> ();
+						AnimateOnSunRise module = sInstance.gameObject.GetComponentInChildren<AnimateOnSunRise> ();
 						if (module != null) {
 							if (module.isMaster) {
 								master = module;
@@ -223,7 +223,7 @@ namespace StaticLight
 		private Vector3 GetBoundsCenter ()
 		{
 			Bounds groupBounds = new Bounds ();
-			foreach (ModuleSunLight module in slaveList) {
+			foreach (AnimateOnSunRise module in slaveList) {
 				
 				groupBounds.Encapsulate (GetBounds (module.gameObject));
 			}
@@ -268,11 +268,11 @@ namespace StaticLight
 		void Update ()
 		{
 			if (isMaster && hasStarted) {
-				if (KerbalKonstructs.UI.StaticsEditorGUI.instance.IsOpen () && !guiIsUp) {
+				if (UI.StaticsEditorGUI.instance.IsOpen () && !guiIsUp) {
 					StaticObjectEditorOpen ();
 					return;
 				}
-				if (guiIsUp && !KerbalKonstructs.UI.StaticsEditorGUI.instance.IsOpen ()) {
+				if (guiIsUp && !UI.StaticsEditorGUI.instance.IsOpen ()) {
 					StaticObjectEditorClose ();
 					return;
 				}
@@ -298,7 +298,7 @@ namespace StaticLight
 			{
 				StartCoroutine ("StartAnim", false);
 
-				foreach (ModuleSunLight module in slaveList) {
+				foreach (AnimateOnSunRise module in slaveList) {
 					module.StartCoroutine ("StartAnim", false);
 				}
 
@@ -308,7 +308,7 @@ namespace StaticLight
 			{
 				StartCoroutine ("StartAnim", true);
 
-				foreach (ModuleSunLight module in slaveList) {
+				foreach (AnimateOnSunRise module in slaveList) {
 					module.StartCoroutine ("StartAnim", true);
 				}
 
