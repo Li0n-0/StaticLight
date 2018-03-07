@@ -11,15 +11,16 @@ namespace StaticLight
 		// Public .cfg fields
 		public string animationName;
 		public bool reverseAnimation = false;
-		public bool timeWarpAnimation = false;
-		public float delayLowTimeWarp = 2f;
-		public float delayHighTimeWarp = .1f;
+		public bool timeWarpAnimation = true;
 		public bool mathHorizontalAngle = false;
 		public float horizonAngleOffset = 0;
+		// Very optional :
+		public float delayLowTimeWarp = 2f;
+		public float delayHighTimeWarp = .1f;
+
 
 		private bool hasStarted = false;
 
-//		private StaticInstance staticInstance;
 		private CelestialBody sun;
 
 		private List<WaitForSeconds> timeWarpDelays;
@@ -46,16 +47,7 @@ namespace StaticLight
 
 		void Start ()
 		{
-			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on Start ()");
-
 			sun = Planetarium.fetch.Sun;
-
-//			foreach (StaticInstance sInstance in StaticDatabase.GetAllStatics ()) {
-//				if (sInstance.gameObject == gameObject) {
-//					staticInstance = sInstance;
-//					break;
-//				}
-//			}
 
 			// Fetch parameter from cfg, using Kerbal Konstructs way
 			var myFields = this.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
@@ -87,7 +79,7 @@ namespace StaticLight
 					break;
 				}
 			}
-//			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") timeWarpAnimation = " + timeWarpAnimation);
+
 			foreach (Animation anim in gameObject.GetComponentsInChildren<Animation> ()) {
 				if (anim [animationName] != null) {
 					animationComponent = anim;
@@ -160,11 +152,8 @@ namespace StaticLight
 
 		void OnDestroy ()
 		{
-			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on OnDestroy ()");
-
 			if (isMaster) {
 				if (slaveList.Count > 0) {
-//					slaveList [0].isMaster = true;
 					slaveList [0].SetUp ();
 				}
 			} else {
@@ -174,8 +163,6 @@ namespace StaticLight
 
 		public override void StaticObjectUpdate ()
 		{
-			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectUpdate ()");
-
 			if (hasStarted) {
 				StopObject ();
 			}
@@ -183,7 +170,6 @@ namespace StaticLight
 
 		private void StaticObjectEditorOpen ()
 		{
-			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectEditorOpen ()");
 			StopObject ();
 			foreach (ModuleSunLight module in slaveList) {
 				module.StopObject ();
@@ -193,7 +179,6 @@ namespace StaticLight
 
 		private void StaticObjectEditorClose ()
 		{
-			Debug.Log ("[StaticLight] (for : " + gameObject.name + ") on StaticObjectEditorClose ()");
 			SetUp ();
 			StartCoroutine ("SearchTheSun");
 			guiIsUp = false;
@@ -201,7 +186,6 @@ namespace StaticLight
 
 		private void SetGroup ()
 		{
-			Debug.Log ("[SL] Set group for : " + gameObject.name + ", group : " + staticInstance.Group);
 			slaveList = new List<ModuleSunLight> ();
 
 			if (staticInstance.Group == "Ungrouped") {
@@ -309,13 +293,9 @@ namespace StaticLight
 			}
 
 			inSunLight = IsUnderTheSun ();
-			//			Debug.Log ("[StaticLight] inSunLight is : " + inSunLight);
 
-
-
-			if (inSunLight && animIsOn) {
-				//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights off");
-
+			if (inSunLight && animIsOn)
+			{
 				StartCoroutine ("StartAnim", false);
 
 				foreach (ModuleSunLight module in slaveList) {
@@ -324,8 +304,8 @@ namespace StaticLight
 
 				return;
 			}
-			if (!inSunLight && !animIsOn) {
-				//				Debug.Log ("[StaticLight] CheckSunPos : should turn lights on");
+			if (!inSunLight && !animIsOn)
+			{
 				StartCoroutine ("StartAnim", true);
 
 				foreach (ModuleSunLight module in slaveList) {
@@ -333,7 +313,6 @@ namespace StaticLight
 				}
 
 			}
-			//			Debug.Log ("[StaticLight] CheckSunPos : nothing wrong with the light, they are : " + lightIsOn);
 		}
 
 		private bool IsUnderTheSun ()
@@ -346,22 +325,10 @@ namespace StaticLight
 			} else {
 				return false;
 			}
-			// Raycast method :
-			//			RaycastHit hit;
-			//
-			//			if (Physics.Raycast (/*transform.position*/rayPos, sun.position, out hit, Mathf.Infinity, (1 << 10 | 1 << 15 | 1 << 28))) {
-			////				Debug.Log ("[StaticLight] (for : " + gameObject.name + ") hit is named : " + hit.transform.name + ", on layer : " + hit.transform.gameObject.layer);
-			//				if (hit.transform.name == sun.bodyName) {
-			//					
-			//					return true;
-			//				}
-			//			}
-			//			return false;
 		}
 
 		private IEnumerator SearchTheSun ()
 		{
-			Debug.Log ("[StaticLight] Main coroutine started");
 			mainCoroutineHasStarted = true;
 			while (true) {
 				
@@ -389,7 +356,6 @@ namespace StaticLight
 
 		private IEnumerator SwitchOn ()
 		{
-//			Debug.Log ("[StaticLight] turning lights on");
 			animIsPlaying = true;
 			if (reverseAnimation) {
 				animationComponent [animationName].speed = -animationSpeed;
@@ -411,7 +377,6 @@ namespace StaticLight
 
 		private IEnumerator SwitchOff ()
 		{
-//			Debug.Log ("[StaticLight] turning lights off");
 			animIsPlaying = true;
 			if (reverseAnimation) {
 				animationComponent [animationName].speed = animationSpeed;
